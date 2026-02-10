@@ -1,0 +1,6 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-labelledby="title desc">
+  <title id="title">STATUS+ logo</title>
+  <desc id="desc">Simple text logo for local Vite usage.</desc>
+  <rect width="360" height="120" rx="16" fill="#3B2F2F" />
+  <text x="180" y="72" text-anchor="middle" fill="#F5EFE6" font-family="Arial, sans-serif" font-size="42" font-weight="700">STATUS+</text>
+</svg>
