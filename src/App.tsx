@@ -7,7 +7,6 @@ import { AdminPanel } from './components/AdminPanel';
 import { NoticeBoard } from './components/NoticeBoard';
 
 type View = 'login' | 'dashboard' | 'noticeboard';
-type NonAdminRole = Exclude<UserRole, 'administracija'>;
 
 type AnnouncementType = 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
 
@@ -249,7 +248,7 @@ export default function App() {
     }
   };
 
-  const handleRegister = async ({ role, email, password }: AuthPayload): Promise<AuthResult> => {
+  const handleRegister = async ({ role, email, password, registration }: AuthPayload): Promise<AuthResult> => {
     if (role === 'administracija') {
       return { ok: false, message: 'Administracijos paskyra kuriama tik duomenų bazėje.' };
     }
@@ -265,6 +264,7 @@ export default function App() {
           role,
           email: email.trim(),
           password,
+          ...(registration || {}),
         }),
       });
 

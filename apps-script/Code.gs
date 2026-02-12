@@ -1,5 +1,6 @@
-const ADMIN_SHEET_NAME = 'Administracija';
+﻿const ADMIN_SHEET_NAME = 'Administracija';
 const ANNOUNCEMENTS_SHEET_NAME = 'Pranešimai';
+
 const ANNOUNCEMENT_HEADERS = [
   'id',
   'type',
@@ -12,11 +13,32 @@ const ANNOUNCEMENT_HEADERS = [
   'createdBy',
   'createdAt',
 ];
-const USER_HEADERS = ['email', 'password', 'createdAt'];
-const USER_SHEETS = {
-  mokinys: 'Mokiniai',
-  tevai: 'Tėvai',
-  mokytojas: 'Mokytojai',
+
+const USER_SCHEMAS = {
+  mokinys: {
+    sheetName: 'Mokiniai',
+    headers: ['email', 'password', 'vardas', 'pavardė', 'klasė', 'createdAt'],
+    fieldOrder: ['vardas', 'pavarde', 'klase'],
+  },
+  tevai: {
+    sheetName: 'Tėvai',
+    headers: [
+      'email',
+      'password',
+      'vardas',
+      'pavardė',
+      'Vaiko / globotinio vardas',
+      'Vaiko / globotinio pavardė',
+      'Vaiko / globotinio klasė',
+      'createdAt',
+    ],
+    fieldOrder: ['vardas', 'pavarde', 'vaikoVardas', 'vaikoPavarde', 'vaikoKlase'],
+  },
+  mokytojas: {
+    sheetName: 'Mokytojai',
+    headers: ['email', 'password', 'vardas', 'pavardė', 'Dalyko mokytojas', 'createdAt'],
+    fieldOrder: ['vardas', 'pavarde', 'dalykoMokytojas'],
+  },
 };
 
 function doGet(e) {
@@ -110,6 +132,12 @@ function createUser_(payload) {
     return { error: 'Trūksta registracijos duomenų.' };
   }
 
+  const profile = normalizeUserProfile_(payload);
+  const validationError = validateUserProfile_(role, profile);
+  if (validationError) {
+    return { error: validationError };
+  }
+
   const sheet = getUserSheet_(role);
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i += 1) {
@@ -119,8 +147,53 @@ function createUser_(payload) {
     }
   }
 
-  sheet.appendRow([email, password, new Date().toISOString()]);
+  const schema = getUserSchema_(role);
+  const row = [
+    email,
+    password,
+    ...schema.fieldOrder.map((fieldKey) => profile[fieldKey] || ''),
+    new Date().toISOString(),
+  ];
+
+  sheet.appendRow(row);
   return { ok: true };
+}
+
+function normalizeUserProfile_(payload) {
+  return {
+    vardas: String(payload.vardas || '').trim(),
+    pavarde: String(payload.pavarde || '').trim(),
+    klase: String(payload.klase || '').trim(),
+    vaikoVardas: String(payload.vaikoVardas || '').trim(),
+    vaikoPavarde: String(payload.vaikoPavarde || '').trim(),
+    vaikoKlase: String(payload.vaikoKlase || '').trim(),
+    dalykoMokytojas: String(payload.dalykoMokytojas || '').trim(),
+  };
+}
+
+function validateUserProfile_(role, profile) {
+  if (role === 'mokinys') {
+    if (!profile.vardas || !profile.pavarde || !profile.klase) {
+      return 'Užpildykite vardą, pavardę ir klasę.';
+    }
+    return '';
+  }
+
+  if (role === 'tevai') {
+    if (!profile.vardas || !profile.pavarde || !profile.vaikoVardas || !profile.vaikoPavarde || !profile.vaikoKlase) {
+      return 'Užpildykite visus tėvų ir vaiko/globotinio laukus.';
+    }
+    return '';
+  }
+
+  if (role === 'mokytojas') {
+    if (!profile.vardas || !profile.pavarde || !profile.dalykoMokytojas) {
+      return 'Užpildykite vardą, pavardę ir dalyką.';
+    }
+    return '';
+  }
+
+  return 'Neteisingas vaidmuo.';
 }
 
 function handleAdminLogin_(payload) {
@@ -299,7 +372,11 @@ function normalizeEmail_(value) {
 
 function normalizeRole_(value) {
   const role = String(value || '').trim();
-  return USER_SHEETS[role] ? role : '';
+  return getUserSchema_(role) ? role : '';
+}
+
+function getUserSchema_(role) {
+  return USER_SCHEMAS[role] || null;
 }
 
 function getOrCreateSheet_(name) {
@@ -316,16 +393,16 @@ function getOrCreateSheet_(name) {
 }
 
 function getUserSheet_(role) {
-  const sheetName = USER_SHEETS[role];
-  if (!sheetName) {
+  const schema = getUserSchema_(role);
+  if (!schema) {
     throw new Error('Neteisingas vaidmuo.');
   }
 
-  const sheet = getOrCreateSheet_(sheetName);
-  const header = sheet.getRange(1, 1, 1, USER_HEADERS.length).getValues()[0];
+  const sheet = getOrCreateSheet_(schema.sheetName);
+  const header = sheet.getRange(1, 1, 1, schema.headers.length).getValues()[0];
   const normalizedHeader = header.map((value) => String(value || '').trim());
-  if (normalizedHeader.join('|') !== USER_HEADERS.join('|')) {
-    sheet.getRange(1, 1, 1, USER_HEADERS.length).setValues([USER_HEADERS]);
+  if (normalizedHeader.join('|') !== schema.headers.join('|')) {
+    sheet.getRange(1, 1, 1, schema.headers.length).setValues([schema.headers]);
   }
   return sheet;
 }

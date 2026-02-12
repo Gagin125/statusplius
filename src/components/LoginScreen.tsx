@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { User, Users, GraduationCap, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -7,10 +7,21 @@ const logo = '/logo.svg';
 export type UserRole = 'mokinys' | 'tevai' | 'mokytojas' | 'administracija';
 type AuthMode = 'login' | 'register';
 
+export interface RegistrationPayload {
+  vardas?: string;
+  pavarde?: string;
+  klase?: string;
+  vaikoVardas?: string;
+  vaikoPavarde?: string;
+  vaikoKlase?: string;
+  dalykoMokytojas?: string;
+}
+
 export interface AuthPayload {
   role: UserRole;
   email: string;
   password: string;
+  registration?: RegistrationPayload;
 }
 
 export interface AuthResult {
@@ -28,6 +39,30 @@ interface LoginScreenProps {
   onRegister: (payload: AuthPayload) => MaybePromise<AuthResult>;
 }
 
+const SUBJECT_OPTIONS = [
+  'Lietuvių kalba ir literatūra',
+  'Matematika',
+  'Fizinis ugdymas',
+  'Dorinis ugdymas (tikyba)',
+  'Dorinis ugdymas (etika)',
+  'Užsienio kalba (rusų)',
+  'Užsienio kalba (anglų)',
+  'Užsienio kalba (vokiečių)',
+  'Biologija',
+  'Chemija',
+  'Fizika',
+  'Informatika',
+  'Technologijos',
+  'Informacinės technologijos',
+  'Istorija',
+  'Geografija',
+  'Ekonomika ir verslumas',
+  'Dailė',
+  'Muzika',
+  'Pilietiškumo pagrindai',
+  'Gyvenimo įgūdžiai',
+];
+
 export function LoginScreen({
   selectedRole,
   onSelectRole,
@@ -43,6 +78,16 @@ export function LoginScreen({
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [registrationFields, setRegistrationFields] = useState<Required<RegistrationPayload>>({
+    vardas: '',
+    pavarde: '',
+    klase: '',
+    vaikoVardas: '',
+    vaikoPavarde: '',
+    vaikoKlase: '',
+    dalykoMokytojas: '',
+  });
+
   const isRoleSelected = selectedRole !== null;
   const isAdminSelected = selectedRole === 'administracija';
 
@@ -54,6 +99,15 @@ export function LoginScreen({
     setErrorMessage('');
     setSuccessMessage('');
     setIsSubmitting(false);
+    setRegistrationFields({
+      vardas: '',
+      pavarde: '',
+      klase: '',
+      vaikoVardas: '',
+      vaikoPavarde: '',
+      vaikoKlase: '',
+      dalykoMokytojas: '',
+    });
   }, [selectedRole]);
 
   const roles = [
@@ -95,6 +149,64 @@ export function LoginScreen({
     onRoleBack();
   };
 
+  const buildRegistrationPayload = (): RegistrationPayload => {
+    if (!selectedRole || selectedRole === 'administracija') {
+      return {};
+    }
+
+    if (selectedRole === 'mokinys') {
+      return {
+        vardas: registrationFields.vardas.trim(),
+        pavarde: registrationFields.pavarde.trim(),
+        klase: registrationFields.klase.trim(),
+      };
+    }
+
+    if (selectedRole === 'tevai') {
+      return {
+        vardas: registrationFields.vardas.trim(),
+        pavarde: registrationFields.pavarde.trim(),
+        vaikoVardas: registrationFields.vaikoVardas.trim(),
+        vaikoPavarde: registrationFields.vaikoPavarde.trim(),
+        vaikoKlase: registrationFields.vaikoKlase.trim(),
+      };
+    }
+
+    return {
+      vardas: registrationFields.vardas.trim(),
+      pavarde: registrationFields.pavarde.trim(),
+      dalykoMokytojas: registrationFields.dalykoMokytojas.trim(),
+    };
+  };
+
+  const validateRegistrationFields = (): string | null => {
+    if (!selectedRole || selectedRole === 'administracija') {
+      return null;
+    }
+
+    const values = buildRegistrationPayload();
+
+    if (selectedRole === 'mokinys') {
+      if (!values.vardas || !values.pavarde || !values.klase) {
+        return 'Užpildykite vardą, pavardę ir klasę.';
+      }
+    }
+
+    if (selectedRole === 'tevai') {
+      if (!values.vardas || !values.pavarde || !values.vaikoVardas || !values.vaikoPavarde || !values.vaikoKlase) {
+        return 'Užpildykite visus tėvų ir vaiko/globotinio laukus.';
+      }
+    }
+
+    if (selectedRole === 'mokytojas') {
+      if (!values.vardas || !values.pavarde || !values.dalykoMokytojas) {
+        return 'Užpildykite vardą, pavardę ir dalyką.';
+      }
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -125,10 +237,18 @@ export function LoginScreen({
         return;
       }
 
+      const registrationError = validateRegistrationFields();
+      if (registrationError) {
+        setErrorMessage(registrationError);
+        setIsSubmitting(false);
+        return;
+      }
+
       const registerResult = await onRegister({
         role: selectedRole,
         email: normalizedEmail,
         password,
+        registration: buildRegistrationPayload(),
       });
 
       if (!registerResult.ok) {
@@ -378,23 +498,127 @@ export function LoginScreen({
                   </motion.div>
 
                   {authMode === 'register' && !isAdminSelected && (
-                    <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 }}>
-                      <label htmlFor="confirm-password" className="block text-sm font-semibold text-[#3B2F2F] mb-3">
-                        Pakartokite slaptažodį
-                      </label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3B2F2F]/40 group-focus-within:text-[#3B2F2F] transition-colors z-10" />
-                        <input
-                          type="password"
-                          id="confirm-password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-12 pr-4 py-4 border-2 border-[#3B2F2F]/20 rounded-2xl focus:outline-none focus:border-[#3B2F2F] focus:ring-4 focus:ring-[#3B2F2F]/10 transition-all bg-white text-[#3B2F2F] text-lg"
-                          required
-                        />
-                      </div>
-                    </motion.div>
+                    <>
+                      <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 }}>
+                        <label htmlFor="confirm-password" className="block text-sm font-semibold text-[#3B2F2F] mb-3">
+                          Pakartokite slaptažodį
+                        </label>
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3B2F2F]/40 group-focus-within:text-[#3B2F2F] transition-colors z-10" />
+                          <input
+                            type="password"
+                            id="confirm-password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full pl-12 pr-4 py-4 border-2 border-[#3B2F2F]/20 rounded-2xl focus:outline-none focus:border-[#3B2F2F] focus:ring-4 focus:ring-[#3B2F2F]/10 transition-all bg-white text-[#3B2F2F] text-lg"
+                            required
+                          />
+                        </div>
+                      </motion.div>
+
+                      <motion.div className="grid gap-4" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Vardas</label>
+                            <input
+                              type="text"
+                              value={registrationFields.vardas}
+                              onChange={(e) => setRegistrationFields((prev) => ({ ...prev, vardas: e.target.value }))}
+                              className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Pavardė</label>
+                            <input
+                              type="text"
+                              value={registrationFields.pavarde}
+                              onChange={(e) => setRegistrationFields((prev) => ({ ...prev, pavarde: e.target.value }))}
+                              className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {selectedRole === 'mokinys' && (
+                          <div>
+                            <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Klasė</label>
+                            <input
+                              type="text"
+                              value={registrationFields.klase}
+                              onChange={(e) => setRegistrationFields((prev) => ({ ...prev, klase: e.target.value }))}
+                              placeholder="pvz. 10A"
+                              className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                              required
+                            />
+                          </div>
+                        )}
+
+                        {selectedRole === 'tevai' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Vaiko / globotinio vardas</label>
+                              <input
+                                type="text"
+                                value={registrationFields.vaikoVardas}
+                                onChange={(e) =>
+                                  setRegistrationFields((prev) => ({ ...prev, vaikoVardas: e.target.value }))
+                                }
+                                className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Vaiko / globotinio pavardė</label>
+                              <input
+                                type="text"
+                                value={registrationFields.vaikoPavarde}
+                                onChange={(e) =>
+                                  setRegistrationFields((prev) => ({ ...prev, vaikoPavarde: e.target.value }))
+                                }
+                                className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                                required
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Vaiko / globotinio klasė</label>
+                              <input
+                                type="text"
+                                value={registrationFields.vaikoKlase}
+                                onChange={(e) =>
+                                  setRegistrationFields((prev) => ({ ...prev, vaikoKlase: e.target.value }))
+                                }
+                                placeholder="pvz. 10A"
+                                className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
+                                required
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedRole === 'mokytojas' && (
+                          <div>
+                            <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Dalyko mokytojas</label>
+                            <select
+                              value={registrationFields.dalykoMokytojas}
+                              onChange={(e) =>
+                                setRegistrationFields((prev) => ({ ...prev, dalykoMokytojas: e.target.value }))
+                              }
+                              className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] bg-white"
+                              required
+                            >
+                              <option value="">Pasirinkite dalyką</option>
+                              {SUBJECT_OPTIONS.map((subject) => (
+                                <option key={subject} value={subject}>
+                                  {subject}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </motion.div>
+                    </>
                   )}
 
                   {(errorMessage || successMessage) && (
@@ -410,8 +634,8 @@ export function LoginScreen({
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="flex gap-4 pt-4"
+                    transition={{ delay: 0.65 }}
+                    className="flex gap-4 pt-2"
                   >
                     <motion.button
                       type="button"

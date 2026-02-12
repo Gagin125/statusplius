@@ -4,6 +4,29 @@ import { LogOut, Plus, Edit, Trash2, Shield, Calendar, AlertCircle, X, Tv, Refre
 import type { Announcement, AuthResult } from '../App';
 
 const logo = '/logo.svg';
+const SUBJECT_OPTIONS = [
+  'Lietuvių kalba ir literatūra',
+  'Matematika',
+  'Fizinis ugdymas',
+  'Dorinis ugdymas (tikyba)',
+  'Dorinis ugdymas (etika)',
+  'Užsienio kalba (rusų)',
+  'Užsienio kalba (anglų)',
+  'Užsienio kalba (vokiečių)',
+  'Biologija',
+  'Chemija',
+  'Fizika',
+  'Informatika',
+  'Technologijos',
+  'Informacinės technologijos',
+  'Istorija',
+  'Geografija',
+  'Ekonomika ir verslumas',
+  'Dailė',
+  'Muzika',
+  'Pilietiškumo pagrindai',
+  'Gyvenimo įgūdžiai',
+];
 
 interface AdminPanelProps {
   announcements: Announcement[];
@@ -292,13 +315,21 @@ export function AdminPanel({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Dalykas (neprivaloma)</label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
-                      placeholder="pvz. Matematika"
-                    />
+                    >
+                      <option value="">Pasirinkite dalyką</option>
+                      {formData.subject && !SUBJECT_OPTIONS.includes(formData.subject) && (
+                        <option value={formData.subject}>{formData.subject}</option>
+                      )}
+                      {SUBJECT_OPTIONS.map((subject) => (
+                        <option key={subject} value={subject}>
+                          {subject}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
