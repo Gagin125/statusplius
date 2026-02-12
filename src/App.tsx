@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { LoginScreen, UserRole, AuthPayload, AuthResult } from './components/LoginScreen';
 import { StudentDashboard } from './components/StudentDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
@@ -9,21 +9,33 @@ import { NoticeBoard } from './components/NoticeBoard';
 type View = 'login' | 'dashboard' | 'noticeboard';
 type NonAdminRole = Exclude<UserRole, 'administracija'>;
 
+type AnnouncementType = 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
+
 interface AdminAuthResponse {
   ok?: boolean;
   message?: string;
 }
 
-interface UserAccount {
-  role: NonAdminRole;
-  email: string;
-  password: string;
-  createdAt: string;
+interface AnnouncementResponse {
+  ok?: boolean;
+  message?: string;
+  data?: Announcement;
 }
 
-interface Announcement {
+interface AnnouncementListResponse {
+  ok?: boolean;
+  message?: string;
+  data?: Announcement[];
+}
+
+interface UserAccountResponse {
+  ok?: boolean;
+  message?: string;
+}
+
+export interface Announcement {
   id: string;
-  type: 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
+  type: AnnouncementType;
   title: string;
   description: string;
   date: string;
@@ -42,71 +54,17 @@ interface AppHistoryState {
 }
 
 const HISTORY_APP_KEY = 'status-plus' as const;
-const ACCOUNTS_STORAGE_KEY = 'status-plus-user-accounts' as const;
 const ADMIN_AUTH_ENDPOINT =
+  import.meta.env.VITE_ADMIN_AUTH_ENDPOINT ||
   'https://script.google.com/macros/s/AKfycbyMSFkijDGr5JAZq6L5qHcYREE6fA0-VfGW1m2umAD9FmHFPAl7bIpwmNAbMdQ9FevY/exec';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('login');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [selectedLoginRole, setSelectedLoginRole] = useState<UserRole | null>(null);
-  const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
-    const raw = window.localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
 
-    try {
-      const parsed = JSON.parse(raw) as UserAccount[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [announcements, setAnnouncements] = useState<Announcement[]>([
-    {
-      id: '1',
-      type: 'cancelled-lesson',
-      title: 'Atšaukta matematikos pamoka',
-      description: '3-4 pamokos atšauktos dėl mokytojo ligos',
-      date: '2026-01-30',
-      class: '10A',
-      subject: 'Matematika',
-      teacher: 'J. Petraitis',
-      createdBy: 'admin',
-      createdAt: '2026-01-30T08:00:00',
-    },
-    {
-      id: '2',
-      type: 'absent-teacher',
-      title: 'Nedirba mokytoja A. Kazlauskienė',
-      description: 'Mokytoja nedirba dėl ligos, pamokos bus keičiamos',
-      date: '2026-01-30',
-      teacher: 'A. Kazlauskienė',
-      createdBy: 'admin',
-      createdAt: '2026-01-30T07:30:00',
-    },
-    {
-      id: '3',
-      type: 'urgent',
-      title: 'Skubus pranešimas',
-      description: 'Šiandien 13:00 bus priešgaisrinė pratybos. Visi mokiniai privalo dalyvauti.',
-      date: '2026-01-30',
-      createdBy: 'admin',
-      createdAt: '2026-01-30T09:00:00',
-    },
-    {
-      id: '4',
-      type: 'class-announcement',
-      title: 'Klasės susirinkimas',
-      description: '10A klasė - susirinkimas penktadienį po pamokų',
-      date: '2026-01-31',
-      class: '10A',
-      createdBy: 'admin',
-      createdAt: '2026-01-29T15:00:00',
-    },
-  ]);
 
   const buildHistoryState = (
     view: View,
@@ -158,9 +116,47 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const handleUserAuthError = (message?: string): AuthResult => ({
+    ok: false,
+    message: message || 'Nepavyko prisijungti. Patikrinkite duomenis.',
+  });
+
+  const fetchAnnouncements = async () => {
+    setAnnouncementsError(null);
+    try {
+      const response = await fetch(`${ADMIN_AUTH_ENDPOINT}?action=listAnnouncements`, {
+        method: 'GET',
+      });
+      const raw = await response.text();
+      let parsed: AnnouncementListResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as AnnouncementListResponse;
+      } catch {
+        setAnnouncementsError('Nepavyko perskaityti pranešimų atsakymo.');
+        return;
+      }
+
+      if (!response.ok || !parsed.ok) {
+        setAnnouncementsError(parsed.message || 'Nepavyko gauti pranešimų.');
+        return;
+      }
+
+      const items = Array.isArray(parsed.data) ? parsed.data : [];
+      const sorted = [...items].sort((a, b) => {
+        const aTime = new Date(a.createdAt || a.date || 0).getTime();
+        const bTime = new Date(b.createdAt || b.date || 0).getTime();
+        return bTime - aTime;
+      });
+      setAnnouncements(sorted);
+    } catch {
+      setAnnouncementsError('Nepavyko prisijungti prie pranešimų sąrašo.');
+    }
+  };
+
   useEffect(() => {
-    window.localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(userAccounts));
-  }, [userAccounts]);
+    void fetchAnnouncements();
+  }, []);
 
   const handleRoleSelect = (role: UserRole) => {
     navigate('login', null, role);
@@ -216,67 +212,195 @@ export default function App() {
       }
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const existing = userAccounts.find(
-      (account) =>
-        account.role === role &&
-        account.email.toLowerCase() === normalizedEmail &&
-        account.password === password,
-    );
+    try {
+      const response = await fetch(ADMIN_AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'loginUser',
+          role,
+          email: email.trim(),
+          password,
+        }),
+      });
 
-    if (!existing) {
-      return { ok: false, message: 'Neteisingi prisijungimo duomenys arba paskyra nesukurta.' };
+      const raw = await response.text();
+      let parsed: UserAccountResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as UserAccountResponse;
+      } catch {
+        return { ok: false, message: 'Nepavyko perskaityti serverio atsakymo.' };
+      }
+
+      if (!response.ok || !parsed.ok) {
+        return handleUserAuthError(parsed.message);
+      }
+
+      navigate('dashboard', role, null);
+      return { ok: true };
+    } catch {
+      return {
+        ok: false,
+        message: 'Nepavyko prisijungti prie Google Sheets. Patikrinkite Web App nustatymus.',
+      };
     }
-
-    navigate('dashboard', role, null);
-    return { ok: true };
   };
 
-  const handleRegister = ({ role, email, password }: AuthPayload): AuthResult => {
+  const handleRegister = async ({ role, email, password }: AuthPayload): Promise<AuthResult> => {
     if (role === 'administracija') {
       return { ok: false, message: 'Administracijos paskyra kuriama tik duomenų bazėje.' };
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const existingByEmail = userAccounts.find(
-      (account) => account.role === role && account.email.toLowerCase() === normalizedEmail,
-    );
+    try {
+      const response = await fetch(ADMIN_AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'createUser',
+          role,
+          email: email.trim(),
+          password,
+        }),
+      });
 
-    if (existingByEmail) {
-      return { ok: false, message: 'Šis el. paštas šiam vaidmeniui jau užregistruotas.' };
+      const raw = await response.text();
+      let parsed: UserAccountResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as UserAccountResponse;
+      } catch {
+        return { ok: false, message: 'Nepavyko perskaityti serverio atsakymo.' };
+      }
+
+      if (!response.ok || !parsed.ok) {
+        return {
+          ok: false,
+          message: parsed.message || 'Nepavyko sukurti paskyros.',
+        };
+      }
+
+      navigate('dashboard', role, null);
+      return { ok: true };
+    } catch {
+      return {
+        ok: false,
+        message: 'Nepavyko sukurti paskyros. Patikrinkite Web App nustatymus.',
+      };
     }
+  };
 
-    const newAccount: UserAccount = {
-      role,
-      email: normalizedEmail,
-      password,
-      createdAt: new Date().toISOString(),
-    };
+  const handleAddAnnouncement = async (
+    announcement: Omit<Announcement, 'id' | 'createdAt'>,
+  ): Promise<AuthResult> => {
+    try {
+      const response = await fetch(ADMIN_AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'createAnnouncement',
+          ...announcement,
+        }),
+      });
 
-    setUserAccounts((prev) => [newAccount, ...prev]);
-    navigate('dashboard', role, null);
-    return { ok: true };
+      const raw = await response.text();
+      let parsed: AnnouncementResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as AnnouncementResponse;
+      } catch {
+        return { ok: false, message: 'Nepavyko perskaityti serverio atsakymo.' };
+      }
+
+      if (!response.ok || !parsed.ok || !parsed.data) {
+        return { ok: false, message: parsed.message || 'Nepavyko sukurti pranešimo.' };
+      }
+
+      setAnnouncements((prev) => [parsed.data!, ...prev]);
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Nepavyko sukurti pranešimo.' };
+    }
+  };
+
+  const handleEditAnnouncement = async (
+    id: string,
+    updatedAnnouncement: Partial<Announcement>,
+  ): Promise<AuthResult> => {
+    try {
+      const response = await fetch(ADMIN_AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'updateAnnouncement',
+          id,
+          ...updatedAnnouncement,
+        }),
+      });
+
+      const raw = await response.text();
+      let parsed: AnnouncementResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as AnnouncementResponse;
+      } catch {
+        return { ok: false, message: 'Nepavyko perskaityti serverio atsakymo.' };
+      }
+
+      if (!response.ok || !parsed.ok || !parsed.data) {
+        return { ok: false, message: parsed.message || 'Nepavyko atnaujinti pranešimo.' };
+      }
+
+      setAnnouncements((prev) => prev.map((item) => (item.id === id ? parsed.data! : item)));
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Nepavyko atnaujinti pranešimo.' };
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string): Promise<AuthResult> => {
+    try {
+      const response = await fetch(ADMIN_AUTH_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          action: 'deleteAnnouncement',
+          id,
+        }),
+      });
+
+      const raw = await response.text();
+      let parsed: AnnouncementResponse = {};
+
+      try {
+        parsed = JSON.parse(raw) as AnnouncementResponse;
+      } catch {
+        return { ok: false, message: 'Nepavyko perskaityti serverio atsakymo.' };
+      }
+
+      if (!response.ok || !parsed.ok) {
+        return { ok: false, message: parsed.message || 'Nepavyko ištrinti pranešimo.' };
+      }
+
+      setAnnouncements((prev) => prev.filter((item) => item.id !== id));
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Nepavyko ištrinti pranešimo.' };
+    }
   };
 
   const handleLogout = () => {
     navigate('login', null, null);
-  };
-
-  const handleAddAnnouncement = (announcement: Omit<Announcement, 'id' | 'createdAt'>) => {
-    const newAnnouncement: Announcement = {
-      ...announcement,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setAnnouncements((prev) => [newAnnouncement, ...prev]);
-  };
-
-  const handleEditAnnouncement = (id: string, updatedAnnouncement: Partial<Announcement>) => {
-    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, ...updatedAnnouncement } : a)));
-  };
-
-  const handleDeleteAnnouncement = (id: string) => {
-    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleViewNoticeBoard = () => {
@@ -349,6 +473,8 @@ export default function App() {
           onDeleteAnnouncement={handleDeleteAnnouncement}
           onLogout={handleLogout}
           onViewNoticeBoard={handleViewNoticeBoard}
+          errorMessage={announcementsError}
+          onRefreshAnnouncements={fetchAnnouncements}
         />
       );
     default:
@@ -363,3 +489,4 @@ export default function App() {
       );
   }
 }
+

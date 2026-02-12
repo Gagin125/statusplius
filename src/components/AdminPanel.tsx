@@ -1,75 +1,88 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { LogOut, Plus, Edit, Trash2, Shield, Calendar, AlertCircle, X, Tv } from 'lucide-react';
-const logo = '/logo.svg';
+import { LogOut, Plus, Edit, Trash2, Shield, Calendar, AlertCircle, X, Tv, RefreshCw } from 'lucide-react';
+import type { Announcement, AuthResult } from '../App';
 
-interface Announcement {
-  id: string;
-  type: 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
-  title: string;
-  description: string;
-  date: string;
-  class?: string;
-  teacher?: string;
-  subject?: string;
-  createdBy: string;
-  createdAt: string;
-}
+const logo = '/logo.svg';
 
 interface AdminPanelProps {
   announcements: Announcement[];
-  onAddAnnouncement: (announcement: Omit<Announcement, 'id' | 'createdAt'>) => void;
-  onEditAnnouncement: (id: string, announcement: Partial<Announcement>) => void;
-  onDeleteAnnouncement: (id: string) => void;
+  errorMessage?: string | null;
+  onRefreshAnnouncements: () => void | Promise<void>;
+  onAddAnnouncement: (announcement: Omit<Announcement, 'id' | 'createdAt'>) => Promise<AuthResult>;
+  onEditAnnouncement: (id: string, announcement: Partial<Announcement>) => Promise<AuthResult>;
+  onDeleteAnnouncement: (id: string) => Promise<AuthResult>;
   onLogout: () => void;
   onViewNoticeBoard: () => void;
 }
 
 export function AdminPanel({
   announcements,
+  errorMessage,
+  onRefreshAnnouncements,
   onAddAnnouncement,
   onEditAnnouncement,
   onDeleteAnnouncement,
   onLogout,
-  onViewNoticeBoard
+  onViewNoticeBoard,
 }: AdminPanelProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     type: 'class-announcement' as Announcement['type'],
     title: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
+    class: '',
     teacher: '',
-    subject: ''
+    subject: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const announcementData = {
-      ...formData,
-      createdBy: 'admin',
-      teacher: formData.teacher || undefined,
-      subject: formData.subject || undefined
-    };
-
-    if (editingId) {
-      onEditAnnouncement(editingId, announcementData);
-      setEditingId(null);
-    } else {
-      onAddAnnouncement(announcementData);
-    }
-
+  const resetForm = () => {
     setFormData({
       type: 'class-announcement',
       title: '',
       description: '',
       date: new Date().toISOString().split('T')[0],
+      class: '',
       teacher: '',
-      subject: ''
+      subject: '',
     });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+
+    const announcementData = {
+      ...formData,
+      createdBy: 'admin',
+      class: formData.class || undefined,
+      teacher: formData.teacher || undefined,
+      subject: formData.subject || undefined,
+    };
+
+    let result: AuthResult = { ok: true };
+
+    if (editingId) {
+      result = await onEditAnnouncement(editingId, announcementData);
+      if (result.ok) {
+        setEditingId(null);
+      }
+    } else {
+      result = await onAddAnnouncement(announcementData);
+    }
+
+    if (!result.ok) {
+      alert(result.message || 'Nepavyko išsaugoti pranešimo.');
+      setIsSaving(false);
+      return;
+    }
+
+    resetForm();
     setShowForm(false);
+    setIsSaving(false);
   };
 
   const handleEdit = (announcement: Announcement) => {
@@ -78,8 +91,9 @@ export function AdminPanel({
       title: announcement.title,
       description: announcement.description,
       date: announcement.date,
+      class: announcement.class || '',
       teacher: announcement.teacher || '',
-      subject: announcement.subject || ''
+      subject: announcement.subject || '',
     });
     setEditingId(announcement.id);
     setShowForm(true);
@@ -88,26 +102,29 @@ export function AdminPanel({
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({
-      type: 'class-announcement',
-      title: '',
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-      teacher: '',
-      subject: ''
-    });
+    resetForm();
   };
 
-  const typeLabels = {
+  const handleDelete = async (id: string) => {
+    if (!confirm('Ar tikrai norite ištrinti šį pranešimą?')) {
+      return;
+    }
+
+    const result = await onDeleteAnnouncement(id);
+    if (!result.ok) {
+      alert(result.message || 'Nepavyko ištrinti pranešimo.');
+    }
+  };
+
+  const typeLabels: Record<Announcement['type'], string> = {
     'cancelled-lesson': 'Atšaukta pamoka',
     'absent-teacher': 'Nedirba mokytojas',
     'class-announcement': 'Pranešimas',
-    'urgent': 'Skubus pranešimas'
+    urgent: 'Skubus pranešimas',
   };
 
   return (
     <div className="min-h-screen bg-[#F5EFE6]">
-      {/* Header */}
       <header className="bg-[#3B2F2F] text-[#F5EFE6] px-6 py-4 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-3">
@@ -146,31 +163,39 @@ export function AdminPanel({
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Action Bar */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-6 flex items-center justify-between"
+          className="mb-6 flex flex-wrap items-center justify-between gap-4"
         >
           <div>
             <h2 className="text-2xl font-semibold text-[#3B2F2F]">Pranešimų valdymas</h2>
-            <p className="text-sm text-[#3B2F2F]/60 mt-1">
-              Viso pranešimų: {announcements.length}
-            </p>
+            <p className="text-sm text-[#3B2F2F]/60 mt-1">Viso pranešimų: {announcements.length}</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-6 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Pridėti pranešimą
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => void onRefreshAnnouncements()}
+              className="px-4 py-3 bg-white text-[#3B2F2F] rounded-xl font-medium hover:bg-[#F5EFE6] transition-colors shadow-lg flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Atnaujinti
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="px-6 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Pridėti pranešimą
+            </button>
+          </div>
         </motion.div>
 
-        {/* Form Modal */}
+        {errorMessage && (
+          <div className="mb-6 rounded-xl bg-[#7A1E1E]/10 text-[#7A1E1E] px-4 py-3">{errorMessage}</div>
+        )}
+
         {showForm && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -188,20 +213,14 @@ export function AdminPanel({
                 <h3 className="text-xl font-semibold text-[#3B2F2F]">
                   {editingId ? 'Redaguoti pranešimą' : 'Naujas pranešimas'}
                 </h3>
-                <button
-                  onClick={handleCancel}
-                  className="p-2 hover:bg-[#F5EFE6] rounded-lg transition-colors"
-                >
+                <button onClick={handleCancel} className="p-2 hover:bg-[#F5EFE6] rounded-lg transition-colors">
                   <X className="w-5 h-5 text-[#3B2F2F]" />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Type Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                    Pranešimo tipas
-                  </label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Pranešimo tipas</label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as Announcement['type'] })}
@@ -215,11 +234,8 @@ export function AdminPanel({
                   </select>
                 </div>
 
-                {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                    Pavadinimas
-                  </label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Pavadinimas</label>
                   <input
                     type="text"
                     value={formData.title}
@@ -230,11 +246,8 @@ export function AdminPanel({
                   />
                 </div>
 
-                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                    Aprašymas
-                  </label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Aprašymas</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -244,11 +257,8 @@ export function AdminPanel({
                   />
                 </div>
 
-                {/* Date */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                    Data
-                  </label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Data</label>
                   <input
                     type="date"
                     value={formData.date}
@@ -258,40 +268,40 @@ export function AdminPanel({
                   />
                 </div>
 
-                {/* Optional fields based on type */}
-                <div className="grid grid-cols-2 gap-4">
-                  {formData.type === 'cancelled-lesson' && (
-                    <div>
-                      <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                        Dalykas (neprivaloma)
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.subject}
-                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
-                        placeholder="pvz. Matematika"
-                      />
-                    </div>
-                  )}
-
-                  {(formData.type === 'cancelled-lesson' || formData.type === 'absent-teacher') && (
-                    <div className={formData.type === 'absent-teacher' ? 'col-span-2' : ''}>
-                      <label className="block text-sm font-medium text-[#3B2F2F] mb-2">
-                        Mokytojas (neprivaloma)
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.teacher}
-                        onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
-                        placeholder="pvz. A. Kazlauskienė"
-                      />
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Klasė (neprivaloma)</label>
+                  <input
+                    type="text"
+                    value={formData.class}
+                    onChange={(e) => setFormData({ ...formData, class: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
+                    placeholder="pvz. 10A"
+                  />
                 </div>
 
-                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Mokytojas (neprivaloma)</label>
+                    <input
+                      type="text"
+                      value={formData.teacher}
+                      onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
+                      placeholder="pvz. A. Kazlauskienė"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Dalykas (neprivaloma)</label>
+                    <input
+                      type="text"
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
+                      placeholder="pvz. Matematika"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -302,7 +312,8 @@ export function AdminPanel({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg"
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg disabled:opacity-70"
                   >
                     {editingId ? 'Išsaugoti' : 'Publikuoti'}
                   </button>
@@ -312,7 +323,6 @@ export function AdminPanel({
           </motion.div>
         )}
 
-        {/* Announcements List */}
         <div className="space-y-4">
           {announcements.map((announcement, index) => (
             <motion.div
@@ -321,19 +331,19 @@ export function AdminPanel({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className={`bg-white rounded-2xl p-5 shadow-md border-2 transition-all hover:shadow-lg ${
-                announcement.type === 'urgent'
-                  ? 'border-[#7A1E1E]/30'
-                  : 'border-[#3B2F2F]/10'
+                announcement.type === 'urgent' ? 'border-[#7A1E1E]/30' : 'border-[#3B2F2F]/10'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                      announcement.type === 'urgent'
-                        ? 'bg-[#7A1E1E] text-white'
-                        : 'bg-[#3B2F2F]/10 text-[#3B2F2F]'
-                    }`}>
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        announcement.type === 'urgent'
+                          ? 'bg-[#7A1E1E] text-white'
+                          : 'bg-[#3B2F2F]/10 text-[#3B2F2F]'
+                      }`}
+                    >
                       {typeLabels[announcement.type]}
                     </span>
                     {announcement.class && (
@@ -341,9 +351,7 @@ export function AdminPanel({
                         {announcement.class}
                       </span>
                     )}
-                    {announcement.type === 'urgent' && (
-                      <AlertCircle className="w-4 h-4 text-[#7A1E1E]" />
-                    )}
+                    {announcement.type === 'urgent' && <AlertCircle className="w-4 h-4 text-[#7A1E1E]" />}
                   </div>
                   <h3 className="text-lg font-semibold text-[#3B2F2F] mb-1">{announcement.title}</h3>
                   <p className="text-sm text-[#3B2F2F]/70 mb-3">{announcement.description}</p>
@@ -365,7 +373,7 @@ export function AdminPanel({
                     <Edit className="w-5 h-5 text-[#3B2F2F]" />
                   </button>
                   <button
-                    onClick={() => onDeleteAnnouncement(announcement.id)}
+                    onClick={() => void handleDelete(announcement.id)}
                     className="p-2 hover:bg-[#7A1E1E]/10 rounded-lg transition-colors"
                     title="Ištrinti"
                   >
