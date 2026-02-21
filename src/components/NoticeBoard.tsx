@@ -1,7 +1,7 @@
-import { motion } from 'motion/react';
+﻿import { motion } from 'motion/react';
 import { Calendar, AlertCircle, X, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
-const logo = '/logo.svg';
+const logo = '/vievio-logo.png';
 
 interface Announcement {
   id: string;
@@ -61,7 +61,7 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
         <button
           onClick={onBack}
           className="fixed top-4 right-4 z-50 p-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl shadow-lg hover:bg-[#2D2323] transition-colors"
-          title="Grįžti"
+          title="GrÄ¯Å¾ti"
         >
           <X className="w-6 h-6" />
         </button>
@@ -74,7 +74,7 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
             <div className="flex items-center gap-6">
               <img src={logo} alt="STATUS+" className="h-20 w-auto" />
               <div className="border-l-2 border-[#F5EFE6]/20 pl-6">
-                <h1 className="text-4xl font-bold mb-2">Šiandienos informacija</h1>
+                <h1 className="text-4xl font-bold mb-2">Å iandienos informacija</h1>
                 <p className="text-xl text-[#F5EFE6]/80">{formatDate(currentTime)}</p>
               </div>
             </div>
@@ -96,9 +96,9 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-3xl p-16 shadow-2xl text-center"
           >
-            <div className="text-6xl mb-6">✓</div>
-            <h2 className="text-4xl font-bold text-[#3B2F2F] mb-4">Šiandien pranešimų nėra</h2>
-            <p className="text-2xl text-[#3B2F2F]/60">Pamokos vyksta kaip įprasta</p>
+            <div className="text-6xl mb-6">âœ“</div>
+            <h2 className="text-4xl font-bold text-[#3B2F2F] mb-4">Å iandien praneÅ¡imÅ³ nÄ—ra</h2>
+            <p className="text-2xl text-[#3B2F2F]/60">Pamokos vyksta kaip Ä¯prasta</p>
           </motion.div>
         ) : (
           <div className="space-y-6">
@@ -149,7 +149,7 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
                 <div className="bg-[#3B2F2F] text-[#F5EFE6] rounded-3xl p-6 shadow-xl">
                   <h2 className="text-3xl font-bold flex items-center gap-3">
                     <Calendar className="w-8 h-8" />
-                    Atšauktos pamokos
+                    AtÅ¡auktos pamokos
                   </h2>
                 </div>
                 <div className="space-y-4">
@@ -178,7 +178,7 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
                     ))
                   ) : (
                     <div className="bg-white rounded-3xl p-8 shadow-xl text-center">
-                      <p className="text-2xl text-[#3B2F2F]/50">Visos pamokos vyksta kaip įprasta</p>
+                      <p className="text-2xl text-[#3B2F2F]/50">Visos pamokos vyksta kaip Ä¯prasta</p>
                     </div>
                   )}
                 </div>
@@ -226,7 +226,7 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-[#3B2F2F]/95 text-[#F5EFE6] px-8 py-4 shadow-xl">
         <div className="max-w-[1920px] mx-auto flex items-center justify-between">
-          <p className="text-xl">STATUS+ • Skaitmeninė mokyklos informacinė sistema</p>
+          <p className="text-xl">STATUS+ â€¢ SkaitmeninÄ— mokyklos informacinÄ— sistema</p>
           <p className="text-xl text-[#F5EFE6]/70">
             Atnaujinta: {currentTime.toLocaleTimeString('lt-LT')}
           </p>
@@ -235,3 +235,4 @@ export function NoticeBoard({ announcements, onBack }: NoticeBoardProps) {
     </div>
   );
 }
+

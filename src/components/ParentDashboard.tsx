@@ -1,6 +1,6 @@
-import { motion } from 'motion/react';
+﻿import { motion } from 'motion/react';
 import { LogOut, Bell, Calendar, AlertCircle, Users, Tv } from 'lucide-react';
-const logo = '/logo.svg';
+const logo = '/vievio-logo.png';
 
 interface Announcement {
   id: string;
@@ -38,7 +38,7 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
               <button
                 onClick={onViewNoticeBoard}
                 className="p-2 hover:bg-[#4A3A3A] rounded-lg transition-colors"
-                title="Skelbimų lenta"
+                title="SkelbimÅ³ lenta"
               >
                 <Tv className="w-5 h-5" />
               </button>
@@ -58,9 +58,9 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
           >
             <div className="flex items-center gap-2 mb-1">
               <Users className="w-4 h-4" />
-              <h2 className="text-lg font-semibold">Tėvų paskyra</h2>
+              <h2 className="text-lg font-semibold">TÄ—vÅ³ paskyra</h2>
             </div>
-            <p className="text-sm text-[#F5EFE6]/70">Jonas Jonaitis • 10A klasė</p>
+            <p className="text-sm text-[#F5EFE6]/70">Jonas Jonaitis â€¢ 10A klasÄ—</p>
           </motion.div>
         </div>
       </header>
@@ -99,7 +99,7 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
         >
           <h2 className="text-lg font-semibold text-[#3B2F2F] mb-3 flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Atšauktos pamokos
+            AtÅ¡auktos pamokos
           </h2>
           <div className="space-y-3">
             {cancelledLessons.length > 0 ? (
@@ -130,7 +130,7 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
               ))
             ) : (
               <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                Šiandien pamokos vyksta kaip įprasta
+                Å iandien pamokos vyksta kaip Ä¯prasta
               </div>
             )}
           </div>
@@ -144,7 +144,7 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
         >
           <h2 className="text-lg font-semibold text-[#3B2F2F] mb-3 flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            Svarbūs mokyklos pranešimai
+            SvarbÅ«s mokyklos praneÅ¡imai
           </h2>
           <div className="space-y-3">
             {schoolAnnouncements.length > 0 ? (
@@ -170,7 +170,7 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
               ))
             ) : (
               <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                Naujų pranešimų nėra
+                NaujÅ³ praneÅ¡imÅ³ nÄ—ra
               </div>
             )}
           </div>
@@ -184,10 +184,11 @@ export function ParentDashboard({ announcements, onLogout, onViewNoticeBoard }: 
           className="bg-white rounded-2xl p-4 shadow-md border border-[#3B2F2F]/10 text-center"
         >
           <p className="text-sm text-[#3B2F2F]/60">
-            Tik peržiūra • Daugiau informacijos kreipkitės į klasės auklėtoją
+            Tik perÅ¾iÅ«ra â€¢ Daugiau informacijos kreipkitÄ—s Ä¯ klasÄ—s auklÄ—tojÄ…
           </p>
         </motion.div>
       </main>
     </div>
   );
 }
+

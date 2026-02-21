@@ -2,7 +2,7 @@
 import { User, Users, GraduationCap, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const logo = '/logo.svg';
+const logo = '/vievio-logo.png';
 
 export type UserRole = 'mokinys' | 'tevai' | 'mokytojas' | 'administracija';
 type AuthMode = 'login' | 'register';
@@ -685,3 +685,4 @@ export function LoginScreen({
     </div>
   );
 }
+
