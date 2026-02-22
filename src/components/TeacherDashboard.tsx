@@ -1,6 +1,6 @@
 ﻿import { motion } from 'motion/react';
 import { LogOut, Bell, Calendar, AlertCircle, GraduationCap, Eye, Tv } from 'lucide-react';
-const logo = '/vievio-logo.png';
+const logo = '/vievio-logo-cropped.png';
 
 interface Announcement {
   id: string;
@@ -42,7 +42,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4">
-              <img src={logo} alt="STATUS+" className="h-12 w-auto" />
+              <img src={logo} alt="STATUS+" className="h-16 w-auto" />
               <div className="border-l border-[#F5EFE6]/20 pl-4">
                 <h1 className="text-xl font-semibold">Mokytojo skydelis</h1>
               </div>
@@ -53,7 +53,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
                 className="px-4 py-2 bg-[#4A3A3A] hover:bg-[#5A4A4A] rounded-lg transition-colors flex items-center gap-2"
               >
                 <Tv className="w-4 h-4" />
-                <span className="hidden sm:inline">SkelbimÅ³ lenta</span>
+                <span className="hidden sm:inline">Skelbimų lenta</span>
               </button>
               <button
                 onClick={onLogout}
@@ -72,11 +72,11 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
           >
             <div className="flex items-center gap-2">
               <GraduationCap className="w-5 h-5" />
-              <span className="text-lg">Aurelija KazlauskienÄ—</span>
+              <span className="text-lg">Aurelija Kazlauskienė</span>
             </div>
             <div className="flex items-center gap-2 bg-[#7A1E1E] px-3 py-1.5 rounded-lg">
               <Eye className="w-4 h-4" />
-              <span className="text-sm font-medium">Tik perÅ¾iÅ«ra</span>
+              <span className="text-sm font-medium">Tik peržiūra</span>
             </div>
           </motion.div>
         </div>
@@ -96,9 +96,9 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
               <Eye className="w-5 h-5 text-[#3B2F2F]" />
             </div>
             <div>
-              <h3 className="font-semibold text-[#3B2F2F]">PerÅ¾iÅ«ros reÅ¾imas</h3>
+              <h3 className="font-semibold text-[#3B2F2F]">Peržiūros režimas</h3>
               <p className="text-sm text-[#3B2F2F]/70">
-                Galite tik perÅ¾iÅ«rÄ—ti praneÅ¡imus. Redagavimas ir kÅ«rimas neprieinami.
+                Galite tik peržiūrėti pranešimus. Redagavimas ir kūrimas neprieinami.
               </p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
               >
                 <h2 className="text-xl font-semibold text-[#3B2F2F] mb-4 flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-[#7A1E1E]" />
-                  SkubÅ«s praneÅ¡imai
+                  Skubūs pranešimai
                 </h2>
                 <div className="space-y-3">
                   {urgentAnnouncements.map((announcement) => (
@@ -144,7 +144,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
             >
               <h2 className="text-xl font-semibold text-[#3B2F2F] mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                Å iandienos informacija
+                Šiandienos informacija
               </h2>
               <div className="space-y-3">
                 {todayAnnouncements.length > 0 ? (
@@ -176,7 +176,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
                   ))
                 ) : (
                   <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                    Å iandien naujÅ³ praneÅ¡imÅ³ nÄ—ra
+                    Šiandien naujų pranešimų nėra
                   </div>
                 )}
               </div>
@@ -193,7 +193,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
             >
               <h2 className="text-xl font-semibold text-[#3B2F2F] mb-4 flex items-center gap-2">
                 <Bell className="w-5 h-5" />
-                KlasÄ—s praneÅ¡imai
+                Klasės pranešimai
               </h2>
               <div className="space-y-3">
                 {announcements.filter(a => a.type === 'class-announcement').length > 0 ? (
@@ -221,7 +221,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
                     ))
                 ) : (
                   <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                    KlasÄ—s praneÅ¡imÅ³ nÄ—ra
+                    Klasės pranešimų nėra
                   </div>
                 )}
               </div>
@@ -236,7 +236,7 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
               >
                 <h2 className="text-xl font-semibold text-[#3B2F2F] mb-4 flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  BÅ«simi praneÅ¡imai
+                  Būsimi pranešimai
                 </h2>
                 <div className="space-y-3">
                   {upcomingAnnouncements.map((announcement) => (
@@ -261,4 +261,6 @@ export function TeacherDashboard({ announcements, onLogout, onViewNoticeBoard }:
     </div>
   );
 }
+
+
 

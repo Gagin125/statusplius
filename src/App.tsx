@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LoginScreen, UserRole, AuthPayload, AuthResult } from './components/LoginScreen';
 import { StudentDashboard } from './components/StudentDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
@@ -56,6 +56,7 @@ const HISTORY_APP_KEY = 'status-plus' as const;
 const ADMIN_AUTH_ENDPOINT =
   import.meta.env.VITE_ADMIN_AUTH_ENDPOINT ||
   'https://script.google.com/macros/s/AKfycbyMSFkijDGr5JAZq6L5qHcYREE6fA0-VfGW1m2umAD9FmHFPAl7bIpwmNAbMdQ9FevY/exec';
+const INACTIVITY_LOGOUT_MS = 60 * 60 * 1000; // 1 hour
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('login');
@@ -63,6 +64,8 @@ export default function App() {
   const [selectedLoginRole, setSelectedLoginRole] = useState<UserRole | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
+  const [todayVilnius, setTodayVilnius] = useState(() => getVilniusDateKey());
+  const inactivityTimeoutRef = useRef<number | null>(null);
 
 
   const buildHistoryState = (
@@ -156,6 +159,53 @@ export default function App() {
   useEffect(() => {
     void fetchAnnouncements();
   }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTodayVilnius(getVilniusDateKey());
+    }, 60 * 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!userRole || currentView === 'login') {
+      if (inactivityTimeoutRef.current !== null) {
+        window.clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimeoutRef.current !== null) {
+        window.clearTimeout(inactivityTimeoutRef.current);
+      }
+
+      inactivityTimeoutRef.current = window.setTimeout(() => {
+        navigate('login', null, null, 'replace');
+      }, INACTIVITY_LOGOUT_MS);
+    };
+
+    const activityEvents: Array<keyof WindowEventMap> = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    resetInactivityTimer();
+
+    return () => {
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer);
+      });
+
+      if (inactivityTimeoutRef.current !== null) {
+        window.clearTimeout(inactivityTimeoutRef.current);
+        inactivityTimeoutRef.current = null;
+      }
+    };
+  }, [userRole, currentView]);
 
   const handleRoleSelect = (role: UserRole) => {
     navigate('login', null, role);
@@ -423,6 +473,16 @@ export default function App() {
     }
   };
 
+  const visibleAnnouncements = announcements.filter((announcement) => {
+    const announcementDate = String(announcement.date || '').trim();
+    if (!announcementDate) {
+      return true;
+    }
+
+    // Hide past announcements automatically after midnight (Europe/Vilnius).
+    return announcementDate >= todayVilnius;
+  });
+
   if (currentView === 'login') {
     return (
       <LoginScreen
@@ -436,14 +496,14 @@ export default function App() {
   }
 
   if (currentView === 'noticeboard') {
-    return <NoticeBoard announcements={announcements} onBack={handleBackToDashboard} />;
+    return <NoticeBoard announcements={visibleAnnouncements} onBack={handleBackToDashboard} />;
   }
 
   switch (userRole) {
     case 'mokinys':
       return (
         <StudentDashboard
-          announcements={announcements}
+          announcements={visibleAnnouncements}
           onLogout={handleLogout}
           onViewNoticeBoard={handleViewNoticeBoard}
         />
@@ -451,7 +511,7 @@ export default function App() {
     case 'tevai':
       return (
         <ParentDashboard
-          announcements={announcements}
+          announcements={visibleAnnouncements}
           onLogout={handleLogout}
           onViewNoticeBoard={handleViewNoticeBoard}
         />
@@ -459,7 +519,7 @@ export default function App() {
     case 'mokytojas':
       return (
         <TeacherDashboard
-          announcements={announcements}
+          announcements={visibleAnnouncements}
           onLogout={handleLogout}
           onViewNoticeBoard={handleViewNoticeBoard}
         />
@@ -488,5 +548,20 @@ export default function App() {
         />
       );
   }
+}
+
+function getVilniusDateKey() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Vilnius',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === 'year')?.value || '0000';
+  const month = parts.find((part) => part.type === 'month')?.value || '01';
+  const day = parts.find((part) => part.type === 'day')?.value || '01';
+
+  return `${year}-${month}-${day}`;
 }
 

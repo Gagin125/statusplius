@@ -3,30 +3,72 @@ import { motion } from 'motion/react';
 import { LogOut, Plus, Edit, Trash2, Shield, Calendar, AlertCircle, X, Tv, RefreshCw } from 'lucide-react';
 import type { Announcement, AuthResult } from '../App';
 
-const logo = '/vievio-logo.png';
+const logo = '/vievio-logo-cropped.png';
 const SUBJECT_OPTIONS = [
-  'LietuviÅ³ kalba ir literatÅ«ra',
+  'Lietuvių kalba ir literatūra',
   'Matematika',
   'Fizinis ugdymas',
   'Dorinis ugdymas (tikyba)',
   'Dorinis ugdymas (etika)',
-  'UÅ¾sienio kalba (rusÅ³)',
-  'UÅ¾sienio kalba (anglÅ³)',
-  'UÅ¾sienio kalba (vokieÄiÅ³)',
+  'Užsienio kalba (rusų)',
+  'Užsienio kalba (anglų)',
+  'Užsienio kalba (vokiečių)',
   'Biologija',
   'Chemija',
   'Fizika',
   'Informatika',
   'Technologijos',
-  'InformacinÄ—s technologijos',
+  'Informacinės technologijos',
   'Istorija',
   'Geografija',
   'Ekonomika ir verslumas',
-  'DailÄ—',
+  'Dailė',
   'Muzika',
-  'PilietiÅ¡kumo pagrindai',
-  'Gyvenimo Ä¯gÅ«dÅ¾iai',
+  'Pilietiškumo pagrindai',
+  'Gyvenimo įgūdžiai',
 ];
+const TEACHER_OPTIONS = Array.from(
+  new Set([
+    'Irena Baliūnienė',
+    'Asta Barauskienė',
+    'Rita Bimbirienė',
+    'Dalia Raslanienė',
+    'Žaneta Kazlauskienė',
+    'Renata Laima Blaškevičiūtė',
+    'Elina Šablinskaja',
+    'Vilija Špilauskaitė',
+    'Elžbieta Juknevičiūtė',
+    'Asta Makarevičiūtė',
+    'Vaida Barščevičienė',
+    'Lina Balaisienė',
+    'Irina Rastorgujeva',
+    'Dalia Charūnaitė',
+    'Miroslavas Franckevičius',
+    'Daiva Jonikienė',
+    'Valda Karmazienė',
+    'Aušra Malinauskaitė-Sidorkina',
+    'Povilas Tenikis',
+    'Vita Strasevičienė',
+    'Violeta Grincevičienė',
+    'Snieguolė Butkutė',
+    'Justinas Mickūnas',
+    'Lilijana Mickūnienė',
+    'Onutė Fylerytė',
+    'Viktorija Gildutienė',
+    'Rasa Peleckienė',
+    'Danguolė Šumskienė',
+    'Tereza Artamonova',
+    'Vida Jodkė',
+    'Dalia Davidavičienė',
+    'Violeta Debesienė',
+    'Virgina Galiauskienė',
+    'Petras Franceson',
+    'Miglė Debesytė-Narbutienė',
+    'Zita Narkeliūnaitė',
+    'Vaida Veršvaitė',
+    'Rytis Šakys',
+  ]),
+).sort((a, b) => a.localeCompare(b, 'lt-LT'));
 
 interface AdminPanelProps {
   announcements: Announcement[];
@@ -98,7 +140,7 @@ export function AdminPanel({
     }
 
     if (!result.ok) {
-      alert(result.message || 'Nepavyko iÅ¡saugoti praneÅ¡imo.');
+      alert(result.message || 'Nepavyko išsaugoti pranešimo.');
       setIsSaving(false);
       return;
     }
@@ -129,21 +171,21 @@ export function AdminPanel({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Ar tikrai norite iÅ¡trinti Å¡Ä¯ praneÅ¡imÄ…?')) {
+    if (!confirm('Ar tikrai norite ištrinti šį pranešimą?')) {
       return;
     }
 
     const result = await onDeleteAnnouncement(id);
     if (!result.ok) {
-      alert(result.message || 'Nepavyko iÅ¡trinti praneÅ¡imo.');
+      alert(result.message || 'Nepavyko ištrinti pranešimo.');
     }
   };
 
   const typeLabels: Record<Announcement['type'], string> = {
-    'cancelled-lesson': 'AtÅ¡aukta pamoka',
+    'cancelled-lesson': 'Atšaukta pamoka',
     'absent-teacher': 'Nedirba mokytojas',
-    'class-announcement': 'PraneÅ¡imas',
-    urgent: 'Skubus praneÅ¡imas',
+    'class-announcement': 'Pranešimas',
+    urgent: 'Skubus pranešimas',
   };
 
   return (
@@ -152,7 +194,7 @@ export function AdminPanel({
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4">
-              <img src={logo} alt="STATUS+" className="h-12 w-auto" />
+              <img src={logo} alt="STATUS+" className="h-16 w-auto" />
               <div className="border-l border-[#F5EFE6]/20 pl-4">
                 <h1 className="text-xl font-semibold">Administracijos skydelis</h1>
               </div>
@@ -163,7 +205,7 @@ export function AdminPanel({
                 className="px-4 py-2 bg-[#4A3A3A] hover:bg-[#5A4A4A] rounded-lg transition-colors flex items-center gap-2"
               >
                 <Tv className="w-4 h-4" />
-                <span className="hidden sm:inline">SkelbimÅ³ lenta</span>
+                <span className="hidden sm:inline">Skelbimų lenta</span>
               </button>
               <button
                 onClick={onLogout}
@@ -194,8 +236,8 @@ export function AdminPanel({
           className="mb-6 flex flex-wrap items-center justify-between gap-4"
         >
           <div>
-            <h2 className="text-2xl font-semibold text-[#3B2F2F]">PraneÅ¡imÅ³ valdymas</h2>
-            <p className="text-sm text-[#3B2F2F]/60 mt-1">Viso praneÅ¡imÅ³: {announcements.length}</p>
+            <h2 className="text-2xl font-semibold text-[#3B2F2F]">Pranešimų valdymas</h2>
+            <p className="text-sm text-[#3B2F2F]/60 mt-1">Viso pranešimų: {announcements.length}</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -210,7 +252,7 @@ export function AdminPanel({
               className="px-6 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              PridÄ—ti praneÅ¡imÄ…
+              Pridėti pranešimą
             </button>
           </div>
         </motion.div>
@@ -234,7 +276,7 @@ export function AdminPanel({
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-[#3B2F2F]">
-                  {editingId ? 'Redaguoti praneÅ¡imÄ…' : 'Naujas praneÅ¡imas'}
+                  {editingId ? 'Redaguoti pranešimą' : 'Naujas pranešimas'}
                 </h3>
                 <button onClick={handleCancel} className="p-2 hover:bg-[#F5EFE6] rounded-lg transition-colors">
                   <X className="w-5 h-5 text-[#3B2F2F]" />
@@ -243,17 +285,17 @@ export function AdminPanel({
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">PraneÅ¡imo tipas</label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Pranešimo tipas</label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as Announcement['type'] })}
                     className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
                     required
                   >
-                    <option value="class-announcement">PraneÅ¡imas</option>
-                    <option value="cancelled-lesson">AtÅ¡aukta pamoka</option>
+                    <option value="class-announcement">Pranešimas</option>
+                    <option value="cancelled-lesson">Atšaukta pamoka</option>
                     <option value="absent-teacher">Nedirba mokytojas</option>
-                    <option value="urgent">Skubus praneÅ¡imas</option>
+                    <option value="urgent">Skubus pranešimas</option>
                   </select>
                 </div>
 
@@ -264,18 +306,18 @@ export function AdminPanel({
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
-                    placeholder="Ä®veskite pavadinimÄ…"
+                    placeholder="Įveskite pavadinimą"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">ApraÅ¡ymas</label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Aprašymas</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F] min-h-[100px]"
-                    placeholder="Ä®veskite apraÅ¡ymÄ…"
+                    placeholder="Įveskite aprašymą"
                     required
                   />
                 </div>
@@ -292,7 +334,7 @@ export function AdminPanel({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">KlasÄ— (neprivaloma)</label>
+                  <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Klasė (neprivaloma)</label>
                   <input
                     type="text"
                     value={formData.class}
@@ -305,13 +347,21 @@ export function AdminPanel({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Mokytojas (neprivaloma)</label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.teacher}
                       onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
-                      placeholder="pvz. A. KazlauskienÄ—"
-                    />
+                    >
+                      <option value="">Pasirinkite mokytoją</option>
+                      {formData.teacher && !TEACHER_OPTIONS.includes(formData.teacher) && (
+                        <option value={formData.teacher}>{formData.teacher}</option>
+                      )}
+                      {TEACHER_OPTIONS.map((teacher) => (
+                        <option key={teacher} value={teacher}>
+                          {teacher}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#3B2F2F] mb-2">Dalykas (neprivaloma)</label>
@@ -320,7 +370,7 @@ export function AdminPanel({
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F] transition-colors bg-white text-[#3B2F2F]"
                     >
-                      <option value="">Pasirinkite dalykÄ…</option>
+                      <option value="">Pasirinkite dalyką</option>
                       {formData.subject && !SUBJECT_OPTIONS.includes(formData.subject) && (
                         <option value={formData.subject}>{formData.subject}</option>
                       )}
@@ -339,14 +389,14 @@ export function AdminPanel({
                     onClick={handleCancel}
                     className="flex-1 px-4 py-3 border-2 border-[#3B2F2F]/20 text-[#3B2F2F] rounded-xl font-medium hover:bg-[#F5EFE6] transition-colors"
                   >
-                    AtÅ¡aukti
+                    Atšaukti
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
                     className="flex-1 px-4 py-3 bg-[#3B2F2F] text-[#F5EFE6] rounded-xl font-medium hover:bg-[#2D2323] transition-colors shadow-lg disabled:opacity-70"
                   >
-                    {editingId ? 'IÅ¡saugoti' : 'Publikuoti'}
+                    {editingId ? 'Išsaugoti' : 'Publikuoti'}
                   </button>
                 </div>
               </form>
@@ -406,7 +456,7 @@ export function AdminPanel({
                   <button
                     onClick={() => void handleDelete(announcement.id)}
                     className="p-2 hover:bg-[#7A1E1E]/10 rounded-lg transition-colors"
-                    title="IÅ¡trinti"
+                    title="Ištrinti"
                   >
                     <Trash2 className="w-5 h-5 text-[#7A1E1E]" />
                   </button>
@@ -419,4 +469,6 @@ export function AdminPanel({
     </div>
   );
 }
+
+
 

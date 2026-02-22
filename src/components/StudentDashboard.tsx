@@ -1,6 +1,6 @@
 ﻿import { motion } from 'motion/react';
 import { LogOut, Bell, Calendar, AlertCircle, User, Tv } from 'lucide-react';
-const logo = '/vievio-logo.png';
+const logo = '/vievio-logo-cropped.png';
 
 interface Announcement {
   id: string;
@@ -33,13 +33,13 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <img src={logo} alt="STATUS+" className="h-10 w-auto" />
+              <img src={logo} alt="STATUS+" className="h-16 w-auto" />
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={onViewNoticeBoard}
                 className="p-2 hover:bg-[#4A3A3A] rounded-lg transition-colors"
-                title="SkelbimÅ³ lenta"
+                title="Skelbimų lenta"
               >
                 <Tv className="w-5 h-5" />
               </button>
@@ -61,7 +61,7 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
               <User className="w-4 h-4" />
               <h2 className="text-lg font-semibold">Jonas Jonaitis</h2>
             </div>
-            <p className="text-sm text-[#F5EFE6]/70">10A klasÄ—</p>
+            <p className="text-sm text-[#F5EFE6]/70">10A klasė</p>
           </motion.div>
         </div>
       </header>
@@ -100,7 +100,7 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
         >
           <h2 className="text-lg font-semibold text-[#3B2F2F] mb-3 flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            AtÅ¡auktos pamokos
+            Atšauktos pamokos
           </h2>
           <div className="space-y-3">
             {cancelledLessons.length > 0 ? (
@@ -124,7 +124,7 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
               ))
             ) : (
               <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                Å iandien pamokos nevyksta kaip Ä¯prasta
+                Šiandien pamokos nevyksta kaip įprasta
               </div>
             )}
           </div>
@@ -167,7 +167,7 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
         >
           <h2 className="text-lg font-semibold text-[#3B2F2F] mb-3 flex items-center gap-2">
             <Bell className="w-5 h-5" />
-            KlasÄ—s praneÅ¡imai
+            Klasės pranešimai
           </h2>
           <div className="space-y-3">
             {classAnnouncements.length > 0 ? (
@@ -193,7 +193,7 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
               ))
             ) : (
               <div className="bg-white rounded-2xl p-6 shadow-md text-center text-[#3B2F2F]/50">
-                NaujÅ³ praneÅ¡imÅ³ nÄ—ra
+                Naujų pranešimų nėra
               </div>
             )}
           </div>
@@ -202,4 +202,6 @@ export function StudentDashboard({ announcements, onLogout, onViewNoticeBoard }:
     </div>
   );
 }
+
+
 

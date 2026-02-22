@@ -2,7 +2,7 @@
 import { User, Users, GraduationCap, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const logo = '/vievio-logo.png';
+const logo = '/vievio-logo-cropped.png';
 
 export type UserRole = 'mokinys' | 'tevai' | 'mokytojas' | 'administracija';
 type AuthMode = 'login' | 'register';
@@ -311,7 +311,7 @@ export function LoginScreen({
                   <motion.img
                     src={logo}
                     alt="STATUS+"
-                    className="h-48 w-auto drop-shadow-2xl"
+                    className="h-72 w-auto drop-shadow-2xl"
                     whileHover={{ scale: 1.05 }}
                     transition={{ type: 'spring', stiffness: 300 }}
                   />
@@ -408,7 +408,7 @@ export function LoginScreen({
               className="max-w-lg mx-auto"
             >
               <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-8">
-                <img src={logo} alt="STATUS+" className="h-32 w-auto mx-auto mb-6" />
+                <img src={logo} alt="STATUS+" className="h-52 w-auto mx-auto mb-6" />
 
                 {selectedRoleData && (
                   <motion.div
@@ -685,4 +685,5 @@ export function LoginScreen({
     </div>
   );
 }
+
 
