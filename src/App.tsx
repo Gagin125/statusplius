@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LoginScreen, UserRole, AuthPayload, AuthResult } from './components/LoginScreen';
 import { StudentDashboard } from './components/StudentDashboard';
 import { ParentDashboard } from './components/ParentDashboard';
@@ -9,6 +9,7 @@ import { NoticeBoard } from './components/NoticeBoard';
 type View = 'login' | 'dashboard' | 'noticeboard';
 
 type AnnouncementType = 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
+type AnnouncementRecipientType = 'visi' | 'mokiniai' | 'tevai' | 'mokytojai';
 
 interface AdminAuthResponse {
   ok?: boolean;
@@ -30,6 +31,7 @@ interface AnnouncementListResponse {
 interface UserAccountResponse {
   ok?: boolean;
   message?: string;
+  data?: UserProfile;
 }
 
 export interface Announcement {
@@ -41,8 +43,24 @@ export interface Announcement {
   class?: string;
   teacher?: string;
   subject?: string;
+  recipientType?: AnnouncementRecipientType;
+  recipientClass?: string;
+  recipientTeacher?: string;
+  sendToParents?: string | boolean;
   createdBy: string;
   createdAt: string;
+}
+
+export interface UserProfile {
+  role?: UserRole;
+  email?: string;
+  vardas?: string;
+  pavarde?: string;
+  klase?: string;
+  vaikoVardas?: string;
+  vaikoPavarde?: string;
+  vaikoKlase?: string;
+  dalykoMokytojas?: string;
 }
 
 interface AppHistoryState {
@@ -65,6 +83,7 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
   const [todayVilnius, setTodayVilnius] = useState(() => getVilniusDateKey());
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const inactivityTimeoutRef = useRef<number | null>(null);
 
 
@@ -88,6 +107,9 @@ export default function App() {
     setCurrentView(view);
     setUserRole(role);
     setSelectedLoginRole(loginRole);
+    if (view === 'login' || !role) {
+      setCurrentUserProfile(null);
+    }
 
     const nextState = buildHistoryState(view, role, loginRole);
     if (mode === 'replace') {
@@ -112,6 +134,9 @@ export default function App() {
       setCurrentView(state.view);
       setUserRole(state.userRole);
       setSelectedLoginRole(state.selectedLoginRole);
+      if (state.view === 'login' || !state.userRole) {
+        setCurrentUserProfile(null);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -251,6 +276,7 @@ export default function App() {
           };
         }
 
+        setCurrentUserProfile(null);
         navigate('dashboard', role, null);
         return { ok: true };
       } catch {
@@ -288,8 +314,9 @@ export default function App() {
         return handleUserAuthError(parsed.message);
       }
 
+      setCurrentUserProfile(parsed.data || null);
       navigate('dashboard', role, null);
-      return { ok: true };
+      return { ok: true, data: parsed.data };
     } catch {
       return {
         ok: false,
@@ -334,8 +361,9 @@ export default function App() {
         };
       }
 
+      setCurrentUserProfile(parsed.data || null);
       navigate('dashboard', role, null);
-      return { ok: true };
+      return { ok: true, data: parsed.data };
     } catch {
       return {
         ok: false,
@@ -453,14 +481,6 @@ export default function App() {
     navigate('login', null, null);
   };
 
-  const handleViewNoticeBoard = () => {
-    if (!userRole) {
-      return;
-    }
-
-    navigate('noticeboard', userRole, null);
-  };
-
   const handleBackToDashboard = () => {
     const state = window.history.state as AppHistoryState | null;
     if (state?.app === HISTORY_APP_KEY && state.view === 'noticeboard') {
@@ -483,6 +503,13 @@ export default function App() {
     return announcementDate >= todayVilnius;
   });
 
+  const userVisibleAnnouncements = useMemo(() => {
+    if (!userRole) {
+      return [];
+    }
+    return visibleAnnouncements.filter((announcement) => isAnnouncementVisibleForUser(announcement, userRole, currentUserProfile));
+  }, [visibleAnnouncements, userRole, currentUserProfile]);
+
   if (currentView === 'login') {
     return (
       <LoginScreen
@@ -503,25 +530,25 @@ export default function App() {
     case 'mokinys':
       return (
         <StudentDashboard
-          announcements={visibleAnnouncements}
+          announcements={userVisibleAnnouncements}
+          profile={currentUserProfile}
           onLogout={handleLogout}
-          onViewNoticeBoard={handleViewNoticeBoard}
         />
       );
     case 'tevai':
       return (
         <ParentDashboard
-          announcements={visibleAnnouncements}
+          announcements={userVisibleAnnouncements}
+          profile={currentUserProfile}
           onLogout={handleLogout}
-          onViewNoticeBoard={handleViewNoticeBoard}
         />
       );
     case 'mokytojas':
       return (
         <TeacherDashboard
-          announcements={visibleAnnouncements}
+          announcements={userVisibleAnnouncements}
+          profile={currentUserProfile}
           onLogout={handleLogout}
-          onViewNoticeBoard={handleViewNoticeBoard}
         />
       );
     case 'administracija':
@@ -532,7 +559,6 @@ export default function App() {
           onEditAnnouncement={handleEditAnnouncement}
           onDeleteAnnouncement={handleDeleteAnnouncement}
           onLogout={handleLogout}
-          onViewNoticeBoard={handleViewNoticeBoard}
           errorMessage={announcementsError}
           onRefreshAnnouncements={fetchAnnouncements}
         />
@@ -563,5 +589,73 @@ function getVilniusDateKey() {
   const day = parts.find((part) => part.type === 'day')?.value || '01';
 
   return `${year}-${month}-${day}`;
+}
+
+function isAnnouncementVisibleForUser(
+  announcement: Announcement,
+  role: UserRole,
+  profile: UserProfile | null,
+) {
+  if (role === 'administracija') {
+    return true;
+  }
+
+  const recipientType = normalizeRecipientType(
+    String(announcement.recipientType || '').trim() as AnnouncementRecipientType,
+  );
+  const recipientClass = normalizeClassValue(String(announcement.recipientClass || announcement.class || '').trim());
+  const recipientTeacher = String(announcement.recipientTeacher || announcement.teacher || '').trim().toLowerCase();
+  const sendToParents = announcement.sendToParents === true || String(announcement.sendToParents || '') === 'true';
+
+  const studentClass = normalizeClassValue(String(profile?.klase || '').trim());
+  const childClass = normalizeClassValue(String(profile?.vaikoKlase || '').trim());
+  const teacherFullName = [profile?.vardas, profile?.pavarde]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+    .toLowerCase();
+
+  if (recipientType === 'visi') {
+    return true;
+  }
+
+  if (role === 'mokinys') {
+    if (recipientType !== 'mokiniai') {
+      return false;
+    }
+    return !recipientClass || recipientClass === studentClass;
+  }
+
+  if (role === 'tevai') {
+    if (recipientType === 'tevai') {
+      return !recipientClass || recipientClass === childClass;
+    }
+
+    if (recipientType === 'mokiniai' && sendToParents) {
+      return !recipientClass || recipientClass === childClass;
+    }
+
+    return false;
+  }
+
+  if (role === 'mokytojas') {
+    if (recipientType !== 'mokytojai') {
+      return false;
+    }
+    return !recipientTeacher || recipientTeacher === teacherFullName;
+  }
+
+  return false;
+}
+
+function normalizeRecipientType(value: AnnouncementRecipientType | ''): AnnouncementRecipientType {
+  if (value === 'mokiniai' || value === 'tevai' || value === 'mokytojai' || value === 'visi') {
+    return value;
+  }
+  return 'visi';
+}
+
+function normalizeClassValue(value: string) {
+  return value.replace(/\s+/g, '').toUpperCase();
 }
 

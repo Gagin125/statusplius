@@ -1,6 +1,7 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Users, GraduationCap, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ClassPicker } from './ClassPicker';
 
 const logo = '/vievio-logo-cropped.png';
 
@@ -27,6 +28,7 @@ export interface AuthPayload {
 export interface AuthResult {
   ok: boolean;
   message?: string;
+  data?: unknown;
 }
 
 type MaybePromise<T> = T | Promise<T>;
@@ -544,13 +546,10 @@ export function LoginScreen({
                         {selectedRole === 'mokinys' && (
                           <div>
                             <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Klasė</label>
-                            <input
-                              type="text"
+                            <ClassPicker
                               value={registrationFields.klase}
-                              onChange={(e) => setRegistrationFields((prev) => ({ ...prev, klase: e.target.value }))}
-                              placeholder="pvz. 10A"
-                              className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
-                              required
+                              onChange={(value) => setRegistrationFields((prev) => ({ ...prev, klase: value }))}
+                              required={true}
                             />
                           </div>
                         )}
@@ -583,15 +582,12 @@ export function LoginScreen({
                             </div>
                             <div className="sm:col-span-2">
                               <label className="block text-sm font-semibold text-[#3B2F2F] mb-2">Vaiko / globotinio klasė</label>
-                              <input
-                                type="text"
+                              <ClassPicker
                                 value={registrationFields.vaikoKlase}
-                                onChange={(e) =>
-                                  setRegistrationFields((prev) => ({ ...prev, vaikoKlase: e.target.value }))
+                                onChange={(value) =>
+                                  setRegistrationFields((prev) => ({ ...prev, vaikoKlase: value }))
                                 }
-                                placeholder="pvz. 10A"
-                                className="w-full px-4 py-3 border-2 border-[#3B2F2F]/20 rounded-xl focus:outline-none focus:border-[#3B2F2F]"
-                                required
+                                required={true}
                               />
                             </div>
                           </div>

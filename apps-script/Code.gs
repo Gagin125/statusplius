@@ -12,6 +12,10 @@ const ANNOUNCEMENT_HEADERS = [
   'subject',
   'createdBy',
   'createdAt',
+  'recipientType',
+  'recipientClass',
+  'recipientTeacher',
+  'sendToParents',
 ];
 
 const USER_SCHEMAS = {
@@ -62,14 +66,14 @@ function doPost(e) {
       if (createdUser.error) {
         return jsonError_(createdUser.error);
       }
-      return jsonOk_();
+      return jsonOk_(createdUser.user || null);
     }
     case 'loginUser': {
       const loginResult = loginUser_(payload);
       if (loginResult.error) {
         return jsonError_(loginResult.error);
       }
-      return jsonOk_();
+      return jsonOk_(loginResult.user || null);
     }
     case 'createAnnouncement': {
       const created = createAnnouncement_(payload);
@@ -116,7 +120,10 @@ function loginUser_(payload) {
     const rowEmail = normalizeEmail_(data[i][0]);
     const rowPassword = String(data[i][1] || '').trim();
     if (rowEmail === email && rowPassword === password) {
-      return { ok: true };
+      return {
+        ok: true,
+        user: userRowToProfile_(role, email, data[i]),
+      };
     }
   }
 
@@ -156,7 +163,10 @@ function createUser_(payload) {
   ];
 
   sheet.appendRow(row);
-  return { ok: true };
+  return {
+    ok: true,
+    user: userRowToProfile_(role, email, row),
+  };
 }
 
 function normalizeUserProfile_(payload) {
@@ -343,6 +353,10 @@ function normalizeAnnouncement_(payload) {
   const allowedTypes = ['cancelled-lesson', 'absent-teacher', 'class-announcement', 'urgent'];
   const rawType = String(payload.type || '').trim();
   const type = allowedTypes.indexOf(rawType) >= 0 ? rawType : 'class-announcement';
+  const allowedRecipients = ['visi', 'mokiniai', 'tevai', 'mokytojai'];
+  const rawRecipientType = String(payload.recipientType || '').trim();
+  const recipientType = allowedRecipients.indexOf(rawRecipientType) >= 0 ? rawRecipientType : 'visi';
+  const sendToParents = String(payload.sendToParents || '').trim() === 'true' ? 'true' : 'false';
 
   return {
     id: String(payload.id || '').trim(),
@@ -353,6 +367,10 @@ function normalizeAnnouncement_(payload) {
     class: String(payload.class || '').trim(),
     teacher: String(payload.teacher || '').trim(),
     subject: String(payload.subject || '').trim(),
+    recipientType: recipientType,
+    recipientClass: String(payload.recipientClass || payload.class || '').trim(),
+    recipientTeacher: String(payload.recipientTeacher || payload.teacher || '').trim(),
+    sendToParents: sendToParents,
     createdBy: String(payload.createdBy || 'admin').trim(),
     createdAt: String(payload.createdAt || '').trim(),
   };
@@ -377,6 +395,38 @@ function normalizeRole_(value) {
 
 function getUserSchema_(role) {
   return USER_SCHEMAS[role] || null;
+}
+
+function userRowToProfile_(role, email, row) {
+  const profile = {
+    role: role,
+    email: email,
+  };
+
+  if (role === 'mokinys') {
+    profile.vardas = String(row[2] || '').trim();
+    profile.pavarde = String(row[3] || '').trim();
+    profile.klase = String(row[4] || '').trim();
+    return profile;
+  }
+
+  if (role === 'tevai') {
+    profile.vardas = String(row[2] || '').trim();
+    profile.pavarde = String(row[3] || '').trim();
+    profile.vaikoVardas = String(row[4] || '').trim();
+    profile.vaikoPavarde = String(row[5] || '').trim();
+    profile.vaikoKlase = String(row[6] || '').trim();
+    return profile;
+  }
+
+  if (role === 'mokytojas') {
+    profile.vardas = String(row[2] || '').trim();
+    profile.pavarde = String(row[3] || '').trim();
+    profile.dalykoMokytojas = String(row[4] || '').trim();
+    return profile;
+  }
+
+  return profile;
 }
 
 function getOrCreateSheet_(name) {
