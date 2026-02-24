@@ -318,19 +318,11 @@ export function LoginScreen({
                     transition={{ type: 'spring', stiffness: 300 }}
                   />
                 </motion.div>
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-4xl font-bold text-[#3B2F2F] mb-3"
-                >
-                  Sveiki atvykę į STATUS+
-                </motion.h1>
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-lg text-[#3B2F2F]/70"
+                  transition={{ delay: 0.4 }}
+                  className="text-lg text-[#7A1E1E] font-medium"
                 >
                   Skaitmeninė mokyklos informacinė sistema
                 </motion.p>
