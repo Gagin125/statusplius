@@ -5,8 +5,9 @@ import { ParentDashboard } from './components/ParentDashboard';
 import { TeacherDashboard } from './components/TeacherDashboard';
 import { AdminPanel } from './components/AdminPanel';
 import { NoticeBoard } from './components/NoticeBoard';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
 
-type View = 'login' | 'dashboard' | 'noticeboard';
+type View = 'login' | 'dashboard' | 'noticeboard' | 'privacy';
 
 type AnnouncementType = 'cancelled-lesson' | 'absent-teacher' | 'class-announcement' | 'urgent';
 type AnnouncementRecipientType = 'visi' | 'mokiniai' | 'tevai' | 'mokytojai';
@@ -234,6 +235,20 @@ export default function App() {
 
   const handleRoleSelect = (role: UserRole) => {
     navigate('login', null, role);
+  };
+
+  const handleOpenPrivacyPolicy = () => {
+    navigate('privacy', null, selectedLoginRole);
+  };
+
+  const handleBackFromPrivacyPolicy = () => {
+    const state = window.history.state as AppHistoryState | null;
+    if (state?.app === HISTORY_APP_KEY && state.view === 'privacy') {
+      window.history.back();
+      return;
+    }
+
+    navigate('login', null, selectedLoginRole, 'replace');
   };
 
   const handleRoleBack = () => {
@@ -510,6 +525,10 @@ export default function App() {
     return visibleAnnouncements.filter((announcement) => isAnnouncementVisibleForUser(announcement, userRole, currentUserProfile));
   }, [visibleAnnouncements, userRole, currentUserProfile]);
 
+  if (currentView === 'privacy') {
+    return <PrivacyPolicy onBack={handleBackFromPrivacyPolicy} />;
+  }
+
   if (currentView === 'login') {
     return (
       <LoginScreen
@@ -518,6 +537,7 @@ export default function App() {
         onRoleBack={handleRoleBack}
         onLogin={handleLogin}
         onRegister={handleRegister}
+        onOpenPrivacyPolicy={handleOpenPrivacyPolicy}
       />
     );
   }
@@ -571,6 +591,7 @@ export default function App() {
           onRoleBack={handleRoleBack}
           onLogin={handleLogin}
           onRegister={handleRegister}
+          onOpenPrivacyPolicy={handleOpenPrivacyPolicy}
         />
       );
   }

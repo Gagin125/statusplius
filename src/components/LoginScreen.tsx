@@ -39,6 +39,7 @@ interface LoginScreenProps {
   onRoleBack: () => void;
   onLogin: (payload: AuthPayload) => MaybePromise<AuthResult>;
   onRegister: (payload: AuthPayload) => MaybePromise<AuthResult>;
+  onOpenPrivacyPolicy: () => void;
 }
 
 const SUBJECT_OPTIONS = [
@@ -71,6 +72,7 @@ export function LoginScreen({
   onRoleBack,
   onLogin,
   onRegister,
+  onOpenPrivacyPolicy,
 }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -293,8 +295,9 @@ export function LoginScreen({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-[#5A3D2F] rounded-full blur-3xl" />
       </motion.div>
 
-      <div className="w-full max-w-6xl relative z-10">
-        <AnimatePresence mode="wait">
+      <div className="w-full max-w-6xl relative z-10 flex min-h-[calc(100vh-2rem)] flex-col">
+        <div className="flex flex-1 items-center justify-center">
+          <AnimatePresence mode="wait">
           {!isRoleSelected ? (
             <motion.div
               key="role-selection"
@@ -395,11 +398,11 @@ export function LoginScreen({
             </motion.div>
           ) : (
             <motion.div
-              key="login-form"
+              key={`login-form-${selectedRole}`}
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}
-              className="max-w-lg mx-auto"
+              className="w-full max-w-xl mx-auto"
             >
               <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-8">
                 <img src={logo} alt="STATUS+" className="h-52 w-auto mx-auto mb-6" />
@@ -668,7 +671,26 @@ export function LoginScreen({
               </motion.div>
             </motion.div>
           )}
-        </AnimatePresence>
+          </AnimatePresence>
+        </div>
+
+        <motion.div
+          key={selectedRole ? `privacy-${selectedRole}` : 'privacy-main'}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: isRoleSelected ? 0.75 : 0.95, duration: 0.35 }}
+          className="mt-8 text-center"
+        >
+          <motion.button
+            type="button"
+            onClick={onOpenPrivacyPolicy}
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.98 }}
+            className="text-sm font-medium text-[#3B2F2F]/70 underline underline-offset-4 transition-colors hover:text-[#3B2F2F]"
+          >
+            Privatumo politika
+          </motion.button>
+        </motion.div>
       </div>
     </div>
   );
